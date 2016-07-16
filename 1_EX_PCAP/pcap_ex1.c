@@ -173,6 +173,8 @@ int main(int argc, char *argv[])
 	{
 		packet = pcap_next(handle, &header);
 
+		// pcap_next.exe란거 써볼것. Winpcap에서만 있는거 같은데....
+
 		const SF_ETHERNET *ethernet;
 		const SF_IP *ip;
 		const SF_TCP *tcp;
@@ -184,7 +186,9 @@ int main(int argc, char *argv[])
 
 		ethernet = (SF_ETHERNET*)(packet);
 
-		if(ethernet->ether_type != 128)
+		if(ethernet->ether_type != 8)
+			// 이거 직접 숫자를 주는 것 보다는 IP_HEADER로 Define 한거 쓰세요.
+			// 흑 Endian 값 잘못썼어
 			continue;
 		// 위의 if 구문을 넣어주지 않으면 Segmentation Fault가 발생함. 아무래도 Ethernet Type이 IPV4가 아니면 아래의 포인터 할당이 전부 흐트러지는 듯.
 		// Segmentation Fault 나기 전까지는 이런 필터를 넣을 필요 조차 못 느낌....
@@ -218,6 +222,11 @@ int main(int argc, char *argv[])
 
 			print_ips(ip->ip_src.s_addr);
 			print_ipd(ip->ip_dst.s_addr);
+
+			// ipnet_ntoa의 문제점. 멀티 스레드에서 static 변수를 부르면 여러번 부르니까
+			// 박살남. Critical Section으로 설정하거나 (너무 느려 -ㅅ-;;)
+			// buffer를 함수 인자로 받으면 된다. (re enterant fuction)
+			// inet_ntoa_r나 inet_ntop를 쓰면 됨!
 
 			printf("SOURCE PORT : %u\n",tcp->th_sport);
 			printf("DESTINATION PORT : %u\n",tcp->th_dport);
